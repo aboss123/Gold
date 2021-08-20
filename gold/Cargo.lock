@@ -148,6 +148,15 @@ dependencies = [
  "cranelift",
  "cranelift-jit",
  "cranelift-module",
+ "gold-frontend",
+ "peg",
+]
+
+[[package]]
+name = "gold-frontend"
+version = "0.1.0"
+dependencies = [
+ "codespan-reporting",
  "peg",
 ]
 
