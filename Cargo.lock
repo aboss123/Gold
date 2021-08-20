@@ -153,14 +153,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gold-frontend"
-version = "0.1.0"
-dependencies = [
- "codespan-reporting",
- "peg",
-]
-
-[[package]]
 name = "gold-backend"
 version = "0.1.0"
 dependencies = [
