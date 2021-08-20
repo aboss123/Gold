@@ -161,6 +161,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "gold-backend"
+version = "0.1.0"
+dependencies = [
+ "cranelift",
+ "cranelift-jit",
+ "cranelift-module",
+]
+
+[[package]]
+name = "gold-frontend"
+version = "0.1.0"
+dependencies = [
+ "codespan-reporting",
+ "peg",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
