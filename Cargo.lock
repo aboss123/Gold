@@ -172,6 +172,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "gold-standard"
+version = "0.1.0"
+dependencies = [
+ "cranelift-jit",
+ "libc",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
