@@ -23,7 +23,9 @@ impl Expression for CallExpression {
             function_registry: environment.function_registry.clone()
         };
 
-        let funky_boi = environment.function_registry.get(&self.sig).unwrap();
+        let map = environment.function_registry.borrow();
+
+        let funky_boi = map.get(&self.sig).unwrap();
 
         funky_boi.eval(&new_environment)
     }

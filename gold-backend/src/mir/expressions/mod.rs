@@ -2,6 +2,7 @@ use crate::mir::types::{Type};
 use std::collections::HashMap;
 use crate::mir::expressions::literal::{Object};
 use std::rc::Rc;
+use std::cell::RefCell;
 
 pub mod literal;
 
@@ -18,7 +19,7 @@ pub mod statements;
 #[derive(Clone)]
 pub struct Environment {
     pub scope: HashMap<String, Object>,
-    pub function_registry: Rc<HashMap<FunctionSig, Box<dyn Expression>>>,
+    pub function_registry: Rc<RefCell<HashMap<FunctionSig, Box<dyn Expression>>>>,
 }
 
 pub trait Expression {
