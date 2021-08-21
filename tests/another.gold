@@ -4,5 +4,7 @@
 // 'b' is of type String.
 // Returns: Int
 fn {
-  foo(23, 2324)
+  if 5 < "SDSD" {
+
+  }
 }

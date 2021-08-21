@@ -23,6 +23,9 @@ impl Expr {
         Expr::Call(_, _, r, _) => r.to_owned(),
         Expr::While(_, _, r) => r.to_owned(),
         Expr::List(_, r) => r.to_owned(),
+        Expr::Var(_, r) => r.to_owned(),
+        Expr::Assign(_, _, r) => r.to_owned(),
+        Expr::Reassign(_, _, r) => r.to_owned(),
         Expr::Equality(lhs, rhs) => lhs.expression_range().start..rhs.expression_range().end,
         Expr::NotEqual(lhs, rhs) => lhs.expression_range().start..rhs.expression_range().end,
         Expr::GreaterThan(lhs, rhs) => lhs.expression_range().start..rhs.expression_range().end,
@@ -40,20 +43,32 @@ impl Expr {
 
 pub enum TypeError {
   // TODO: Make this something useful
-  InvaidTypesForOperation(Range<usize>, Range<usize>),
+  InvaidTypesForOperation(Range<usize>, Range<usize>, Type, Type),
   NotEqualFunctionReturnType(Range<usize>, Range<usize>),
   FunctionDoesNotExist(String, Range<usize>),
   IncorrectNumberOfFunctionArguments(Range<usize>, usize, usize),
-  IncorrectTypeValueForArgument(Range<usize>, Range<usize>, Type, Type)
+  IncorrectTypeValueForArgument(Range<usize>, Range<usize>, Type, Type),
+  ExpectedExpression(Range<usize>, Type),
+  NotDefined(Range<usize>)
 }
 
-pub fn report_type_error(error: TypeError, filename: &str, source: &str) -> Result<(), Error> {
+pub fn report_type_error(error: TypeError, filename: &str, source: &str) {
   let mut file_handler = SimpleFiles::new();
   let file_id = file_handler.add(filename, source);
 
   let err: Diagnostic<usize>;
   match error {
-    TypeError::InvaidTypesForOperation(s1, s2) => todo!(),
+    TypeError::InvaidTypesForOperation(s1, s2, mut expected, mut got) => {
+      err = Diagnostic::error()
+        .with_message("Both sides of the expression must be the same type")
+        .with_labels(vec![
+          Label::secondary(file_id, s1).with_message(["is of type `", expected.as_str(), "`"].join("")),
+          Label::secondary(file_id, s2).with_message(["is of type `", got.as_str(), "`"].join(""))
+        ])
+        .with_notes(vec![
+          "Both expression should be the same type".to_owned(),
+        ])
+    },
     TypeError::NotEqualFunctionReturnType(s1, s2) => todo!(),
     TypeError::FunctionDoesNotExist(name, loc) =>  {
       err = Diagnostic::error()
@@ -66,7 +81,6 @@ pub fn report_type_error(error: TypeError, filename: &str, source: &str) -> Resu
       err = Diagnostic::error()
         .with_message("Function call has incorrect number of arguments")
         .with_labels(vec![
-          //Label::primary(file_id, s1),
           Label::secondary(file_id, s1).with_message(["Expected ", expected_args.to_string().as_str(), " arguments"].join(""))
         ])
         .with_notes(vec![
@@ -82,11 +96,28 @@ pub fn report_type_error(error: TypeError, filename: &str, source: &str) -> Resu
           Label::primary(file_id, error).with_message(["Expected type `", expected.as_str(), "` but got type `", got.as_str(), "`"].join(""))
         ]);
     }
+    TypeError::ExpectedExpression(loc, mut ty) => {
+      err = Diagnostic::error()
+      .with_message("Invalid expression")
+      .with_labels(vec![
+        Label::primary(file_id, loc).with_message(["Expected type `", ty.as_str(), "`"].join(""))
+      ]);
+    }
+    TypeError::NotDefined(loc) => {
+      err = Diagnostic::error()
+      .with_message("Value has not been defined")
+      .with_labels(vec![
+        Label::primary(file_id, loc).with_message("Expected variable to be defined")
+      ]);
+    },
   }
   let writer = StandardStream::stderr(ColorChoice::Always);
   let config = codespan_reporting::term::Config::default();
-  codespan_reporting::term::emit(&mut writer.lock(), &config, &file_handler, &err)?;
-  Ok(())
+  let res = codespan_reporting::term::emit(&mut writer.lock(), &config, &file_handler, &err);
+  match res {
+    Ok(_) => {},
+    Err(e) => println!("{}", e.to_string())
+  }
 }
 
 pub fn report_parse_error(filename: &str, source: &str, err: ParseError<LineCol>) -> Result<(), Error> {

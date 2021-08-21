@@ -19,6 +19,7 @@ pub enum Expr {
   NoExpr,
   Number(u64, Range<usize>),
   String(String, Range<usize>),
+  Var(String, Range<usize>),
   Parameter(Parameter, Range<usize>),
   Function(/* name */ String, /* params */ Vec<(Parameter, Range<usize>)>, /* Ret */ Type, /* stmts */ Vec<Expr>, Range<usize>),
 
@@ -30,6 +31,9 @@ pub enum Expr {
 
   While(Box<Expr>, Vec<Expr>, Range<usize>),
   List(Vec<Expr>, Range<usize>),
+
+  Assign(String, Box<Expr>, Range<usize>),
+  Reassign(String, Box<Expr>, Range<usize>),
 
   // is
   Equality(Box<Expr>, Box<Expr>),
@@ -106,6 +110,14 @@ peg::parser!(pub grammar parser() for str {
       {
           Expr::Function(function_name, params, ret, stmts, start..end)
       }   
+
+  pub rule assignment() -> Expr 
+      = start:position!() "var" _ i:identifier() _ "=" _ e:expression() end:position!()
+      { Expr::Assign(i, Box::new(e), start..end) }
+
+  pub rule reassignment() -> Expr 
+      = start:position!() i:identifier() _ "=" _ e:expression() end:position!()
+      { Expr::Reassign(i, Box::new(e), start..end) }
 
   pub rule parameter_decl() -> (Parameter, Range<usize>)
       = _ "//" _  "'" param_name:identifier() "'" _ "is" _ "of" _ "type" _ 
@@ -193,6 +205,7 @@ peg::parser!(pub grammar parser() for str {
     "(" _ expr:expression() _ ")" { expr }
     lit:literal() { lit }
     li:list() { li }
+    start:position!() "" i:identifier() "" end:position!() { Expr::Var(i, start..end) }
   }
 
   pub rule parameters() -> Vec<(Parameter, Range<usize>)>
