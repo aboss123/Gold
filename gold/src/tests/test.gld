@@ -3,3 +3,6 @@
 // 'a' is of type Int.
 // 'b' is of type String.
 // Returns: String
+fn {
+  "Hello, World!"
+}
