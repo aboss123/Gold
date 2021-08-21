@@ -5,18 +5,32 @@
 //     Product
 // }
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Debug, Copy, Clone, Hash)]
+
+#[derive(Ord, PartialOrd, Eq, PartialEq, Debug, Clone, Hash)]
 pub enum ScalarType {
+    Char,
     Int,
     Float,
-    String,
 }
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Debug, Copy, Clone, Hash)]
+#[derive(Ord, PartialOrd, Eq, PartialEq, Debug, Clone, Hash)]
 pub enum Type {
+    Void,
     Scalar(ScalarType),
-    // Array(Box<Type>),
+    Array(Box<Type>),
     // Composite(CompositeType)
+}
+
+
+
+impl Type {
+    pub fn as_scalar(&self) -> Option<&ScalarType> {
+        if let Self::Scalar(scalar) = self {
+            Some(scalar)
+        } else {
+            None
+        }
+    }
 }
 
 //

@@ -10,7 +10,7 @@ pub struct CallExpression {
 
 impl Expression for CallExpression {
     fn get_type(&self, _: &Environment) -> Type {
-        self.sig.return_type
+        self.sig.return_type.clone()
     }
 
     fn eval(&self, environment: &Environment) -> Object {

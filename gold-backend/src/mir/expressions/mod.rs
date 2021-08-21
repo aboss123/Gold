@@ -11,6 +11,10 @@ pub mod function;
 
 pub mod variable;
 
+pub mod casting;
+
+pub mod statements;
+
 #[derive(Clone)]
 pub struct Environment {
     pub scope: HashMap<String, Object>,
