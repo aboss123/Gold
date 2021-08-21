@@ -6,3 +6,4 @@ mod io;
 
 mod mem;
 
+mod string;
