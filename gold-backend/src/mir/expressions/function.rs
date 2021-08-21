@@ -1,4 +1,4 @@
-use crate::mir::expressions::{FunctionSig, Expression, Environment};
+use crate::mir::expressions::{FunctionSig, Expression, ExpressionLevelEnvironment};
 use crate::mir::types::Type;
 use crate::mir::expressions::literal::Object;
 use std::collections::HashMap;
@@ -9,16 +9,16 @@ pub struct CallExpression {
 }
 
 impl Expression for CallExpression {
-    fn get_type(&self, _: &Environment) -> Type {
+    fn get_type(&self, _: &ExpressionLevelEnvironment) -> Type {
         self.sig.return_type.clone()
     }
 
-    fn eval(&self, environment: &Environment) -> Object {
+    fn eval(&self, environment: &ExpressionLevelEnvironment) -> Object {
         let eval_args: HashMap<String, Object> = self.args.iter()
             .map(|(s, x)| (s.to_owned(), x.eval(environment)))
             .collect();
 
-        let new_environment = Environment {
+        let new_environment = ExpressionLevelEnvironment {
             scope: eval_args,
             function_registry: environment.function_registry.clone()
         };

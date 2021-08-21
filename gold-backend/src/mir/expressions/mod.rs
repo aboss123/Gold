@@ -17,14 +17,14 @@ pub mod casting;
 pub mod statements;
 
 #[derive(Clone)]
-pub struct Environment {
+pub struct ExpressionLevelEnvironment {
     pub scope: HashMap<String, Object>,
     pub function_registry: Rc<RefCell<HashMap<FunctionSig, Box<dyn Expression>>>>,
 }
 
 pub trait Expression {
-    fn get_type(&self, environment: &Environment) -> Type;
-    fn eval(&self, environment: &Environment) -> Object;
+    fn get_type(&self, environment: &ExpressionLevelEnvironment) -> Type;
+    fn eval(&self, environment: &ExpressionLevelEnvironment) -> Object;
 }
 
 #[derive(Clone, Hash, Ord, PartialOrd, Eq, PartialEq, Debug)]

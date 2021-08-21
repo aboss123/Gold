@@ -1,4 +1,4 @@
-use crate::mir::expressions::{Expression, Environment};
+use crate::mir::expressions::{Expression, ExpressionLevelEnvironment};
 use crate::mir::types::Type;
 use crate::mir::expressions::literal::Object;
 
@@ -7,11 +7,11 @@ pub struct VariableExpression {
 }
 
 impl Expression for VariableExpression {
-    fn get_type(&self, environment: &Environment) -> Type {
+    fn get_type(&self, environment: &ExpressionLevelEnvironment) -> Type {
         environment.scope[&self.name].get_type(environment)
     }
 
-    fn eval(&self, environment: &Environment) -> Object {
+    fn eval(&self, environment: &ExpressionLevelEnvironment) -> Object {
         environment.scope[&self.name].eval(environment)
     }
 }

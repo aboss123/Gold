@@ -1,4 +1,4 @@
-use crate::mir::expressions::{Environment, Expression};
+use crate::mir::expressions::{ExpressionLevelEnvironment, Expression};
 use crate::mir::types::{ScalarType, Type};
 
 #[derive(Clone, PartialOrd, PartialEq)]
@@ -68,7 +68,7 @@ impl Scalar {
 }
 
 impl Expression for Object {
-    fn get_type(&self, environment: &Environment) -> Type {
+    fn get_type(&self, environment: &ExpressionLevelEnvironment) -> Type {
         match self {
             Object::Scalar(s) => match s {
                 Scalar::Int(_) => Type::Scalar(ScalarType::Int),
@@ -90,7 +90,7 @@ impl Expression for Object {
         }
     }
 
-    fn eval(&self, _: &Environment) -> Object {
+    fn eval(&self, _: &ExpressionLevelEnvironment) -> Object {
         self.clone()
     }
 }

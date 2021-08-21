@@ -1,5 +1,5 @@
 use crate::mir::types::{Type, ScalarType};
-use crate::mir::expressions::{Expression, Environment};
+use crate::mir::expressions::{Expression, ExpressionLevelEnvironment};
 use crate::mir::expressions::literal::{Object, Scalar};
 
 pub struct CastExpression {
@@ -8,11 +8,11 @@ pub struct CastExpression {
 }
 
 impl Expression for CastExpression {
-    fn get_type(&self, _: &Environment) -> Type {
+    fn get_type(&self, _: &ExpressionLevelEnvironment) -> Type {
         Type::Scalar(self.into.clone())
     }
 
-    fn eval(&self, environment: &Environment) -> Object {
+    fn eval(&self, environment: &ExpressionLevelEnvironment) -> Object {
         let val = self.child.eval(environment).as_scalar().cloned().expect("Must be scalar type");
 
         Object::Scalar(match self.into {

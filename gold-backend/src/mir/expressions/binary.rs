@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::mir::expressions::{Environment, Expression};
+use crate::mir::expressions::{ExpressionLevelEnvironment, Expression};
 use crate::mir::expressions::literal::{Object, Scalar};
 use crate::mir::types::{ScalarType, Type};
 
@@ -11,7 +11,7 @@ pub struct BinaryArithmeticExpression<T> {
 }
 
 impl<T> BinaryArithmeticExpression<T> {
-    pub fn type_of(&self, environment: &Environment) -> Type {
+    pub fn type_of(&self, environment: &ExpressionLevelEnvironment) -> Type {
         let left = self.lhs.get_type(environment);
 
         let right = self.rhs.get_type(environment);
@@ -25,11 +25,11 @@ impl<T> BinaryArithmeticExpression<T> {
 pub struct AddOperator;
 
 impl Expression for BinaryArithmeticExpression<AddOperator> {
-    fn get_type(&self, environment: &Environment) -> Type {
+    fn get_type(&self, environment: &ExpressionLevelEnvironment) -> Type {
         self.type_of(environment)
     }
 
-    fn eval(&self, environment: &Environment) -> Object {
+    fn eval(&self, environment: &ExpressionLevelEnvironment) -> Object {
         let mut lhs = self.lhs.eval(environment);
         let mut rhs = self.rhs.eval(environment);
 
@@ -60,11 +60,11 @@ impl Expression for BinaryArithmeticExpression<AddOperator> {
 pub struct SubOperator;
 
 impl Expression for BinaryArithmeticExpression<SubOperator> {
-    fn get_type(&self, environment: &Environment) -> Type {
+    fn get_type(&self, environment: &ExpressionLevelEnvironment) -> Type {
         self.type_of(environment)
     }
 
-    fn eval(&self, environment: &Environment) -> Object {
+    fn eval(&self, environment: &ExpressionLevelEnvironment) -> Object {
         let lhs = self.lhs.eval(environment);
         let rhs = self.rhs.eval(environment);
 
@@ -88,11 +88,11 @@ impl Expression for BinaryArithmeticExpression<SubOperator> {
 pub struct MulOperator;
 
 impl Expression for BinaryArithmeticExpression<MulOperator> {
-    fn get_type(&self, environment: &Environment) -> Type {
+    fn get_type(&self, environment: &ExpressionLevelEnvironment) -> Type {
         self.type_of(environment)
     }
 
-    fn eval(&self, environment: &Environment) -> Object {
+    fn eval(&self, environment: &ExpressionLevelEnvironment) -> Object {
         let lhs = self.lhs.eval(environment);
         let rhs = self.rhs.eval(environment);
 
@@ -116,11 +116,11 @@ impl Expression for BinaryArithmeticExpression<MulOperator> {
 pub struct DivOperator;
 
 impl Expression for BinaryArithmeticExpression<DivOperator> {
-    fn get_type(&self, environment: &Environment) -> Type {
+    fn get_type(&self, environment: &ExpressionLevelEnvironment) -> Type {
         self.type_of(environment)
     }
 
-    fn eval(&self, environment: &Environment) -> Object {
+    fn eval(&self, environment: &ExpressionLevelEnvironment) -> Object {
         let lhs = self.lhs.eval(environment);
         let rhs = self.rhs.eval(environment);
 
@@ -144,11 +144,11 @@ impl Expression for BinaryArithmeticExpression<DivOperator> {
 pub struct LessThanOperator;
 
 impl Expression for BinaryArithmeticExpression<LessThanOperator> {
-    fn get_type(&self, environment: &Environment) -> Type {
+    fn get_type(&self, environment: &ExpressionLevelEnvironment) -> Type {
         self.type_of(environment)
     }
 
-    fn eval(&self, environment: &Environment) -> Object {
+    fn eval(&self, environment: &ExpressionLevelEnvironment) -> Object {
         let lhs = self.lhs.eval(environment);
         let rhs = self.rhs.eval(environment);
 
@@ -172,11 +172,11 @@ impl Expression for BinaryArithmeticExpression<LessThanOperator> {
 pub struct GreaterThanOperator;
 
 impl Expression for BinaryArithmeticExpression<GreaterThanOperator> {
-    fn get_type(&self, environment: &Environment) -> Type {
+    fn get_type(&self, environment: &ExpressionLevelEnvironment) -> Type {
         self.type_of(environment)
     }
 
-    fn eval(&self, environment: &Environment) -> Object {
+    fn eval(&self, environment: &ExpressionLevelEnvironment) -> Object {
         let lhs = self.lhs.eval(environment);
         let rhs = self.rhs.eval(environment);
 
@@ -200,11 +200,11 @@ impl Expression for BinaryArithmeticExpression<GreaterThanOperator> {
 pub struct EqOperator;
 
 impl Expression for BinaryArithmeticExpression<EqOperator> {
-    fn get_type(&self, environment: &Environment) -> Type {
+    fn get_type(&self, environment: &ExpressionLevelEnvironment) -> Type {
         self.type_of(environment)
     }
 
-    fn eval(&self, environment: &Environment) -> Object {
+    fn eval(&self, environment: &ExpressionLevelEnvironment) -> Object {
         let lhs = self.lhs.eval(environment);
         let rhs = self.rhs.eval(environment);
 
