@@ -5,8 +5,8 @@ use crate::frontend::Expr;
 use crate::error::report_parse_error;
 
 pub struct Parser<'a> {
-  filename: &'a str,
-  file_contents: String
+  pub filename: &'a str,
+  pub file_contents: String
 }
 
 impl<'a> Parser<'a> {

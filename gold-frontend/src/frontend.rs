@@ -1,6 +1,6 @@
 use core::ops::Range;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Type {
   Int,
   Float,
@@ -17,19 +17,19 @@ pub struct Parameter {
 
 pub enum Expr {
   NoExpr,
-  Number(u64),
-  String(String),
+  Number(u64, Range<usize>),
+  String(String, Range<usize>),
   Parameter(Parameter, Range<usize>),
-  Function(/* name */ String, /* Stmts */ Vec<Expr>, /* Ret */ Type, /* stmts */ Vec<Expr>),
+  Function(/* name */ String, /* params */ Vec<(Parameter, Range<usize>)>, /* Ret */ Type, /* stmts */ Vec<Expr>, Range<usize>),
 
-  Else(Vec<Expr>),
-  Elif(Box<Expr>, Vec<Expr>),
-  If(Box<Expr>, Vec<Expr>, Option<Vec<Expr>>, Option<Box<Expr>>),
+  Else(Vec<Expr>, Range<usize>),
+  Elif(Box<Expr>, Vec<Expr>, Range<usize>),
+  If(Box<Expr>, Vec<Expr>, Option<Vec<Expr>>, Option<Box<Expr>>, Range<usize>),
 
-  Call(String, Vec<Expr>),
+  Call(String, Vec<Expr>, Range<usize>, Range<usize>),
 
-  While(Box<Expr>, Vec<Expr>),
-  List(Vec<Expr>),
+  While(Box<Expr>, Vec<Expr>, Range<usize>),
+  List(Vec<Expr>, Range<usize>),
 
   // is
   Equality(Box<Expr>, Box<Expr>),
@@ -76,7 +76,21 @@ impl From<String> for Type {
           _ => Type::Int
       }
   }
+}
 
+
+impl Type {
+
+  pub fn as_str(&mut self) -> &str {
+    match self {
+        Type::Int => "Int",
+        Type::Float => "Float",
+        Type::Number => "Number",
+        Type::String => "String",
+        Type::Bool => "Bool",
+        Type::Void => "Void",
+    }
+  }
 }
 
 
@@ -84,20 +98,20 @@ peg::parser!(pub grammar parser() for str {
 
 
   pub rule function() -> Expr 
-      = "//" _ function_name:identifier() _ "is" _ "a" _ "function." _ 
+      = "//" start:position!() _ function_name:identifier() end:position!() _ "is" _ "a" _ "function." _ 
         "//" _ "Params:" 
         params:parameters() _ 
         ret:return_stmt() _ 
         "fn" _ "{" _ stmts:statements() _ "}"
       {
-          Expr::Function(function_name, params, ret, stmts)
+          Expr::Function(function_name, params, ret, stmts, start..end)
       }   
 
-  pub rule parameter_decl() -> Expr 
-      = _ "//" _ start:position!() "'" param_name:identifier() "'" _ "is" _ "of" _ "type" _ 
-      ty:identifier() end:position!() "."
+  pub rule parameter_decl() -> (Parameter, Range<usize>)
+      = _ "//" _  "'" param_name:identifier() "'" _ "is" _ "of" _ "type" _ 
+      start:position!() ty:identifier() end:position!() "."
       {
-          Expr::Parameter(Parameter {
+          (Parameter {
               name: param_name,
               typename: Type::from(ty)
           }, start..end)
@@ -105,7 +119,8 @@ peg::parser!(pub grammar parser() for str {
 
 
   pub rule list() -> Expr 
-      = "[" _ values:((_ expr:expression() _ {expr}) ** ",") _ "]" {Expr::List(values)}
+      = start:position!() "[" _ values:((_ expr:expression() _ {expr}) ** ",") _ "]" end:position!()
+      {Expr::List(values, start..end)}
     
   pub rule expression() -> Expr
       = if_expr()
@@ -116,23 +131,23 @@ peg::parser!(pub grammar parser() for str {
       = stmt:(expression()*) { stmt }
   
   pub rule else_expr() -> Expr
-      = "else" _ "{" _ body:statements() _ "}"
+      = start:position!() "else" _ "{" _ body:statements() _ "}" end:position!()
       {
-        Expr::Else(body)
+        Expr::Else(body, start..end)
       }
   
   pub rule elif() -> Expr 
-      = "elif" _ expr:binary_op() _ "{"
+      = start:position!() "elif" _ expr:binary_op() _ "{"
             body:statements() _
-        "}"
+        "}" end:position!()
       {
-        Expr::Elif(Box::new(expr), body)
+        Expr::Elif(Box::new(expr), body, start..end)
       }
   
   pub rule if_expr() -> Expr
-      = "if" _ expr:binary_op() _ "{"  _
+      = start:position!() "if" _ expr:binary_op() _ "{"  _
           if_body:statements() _ 
-        "}" _ elif_body:(elif()*) _ else_body:(else_expr()?)
+        "}" end:position!() _ elif_body:(elif()*) _ else_body:(else_expr()?) 
 
       {
         Expr::If(Box::new(expr), if_body, 
@@ -144,19 +159,19 @@ peg::parser!(pub grammar parser() for str {
           match else_body {
             Some(v) => Some(Box::new(v)),
             None => None
-          })
+          }, start..end)
       }
 
   pub rule while_expr() -> Expr 
-      = "while" _ cond:binary_op() _ "{"  _ 
+      = start:position!() "while" _ cond:binary_op() _ "{"  _ 
           stmts:statements()
-      "}" 
+      "}" end:position!() 
       {
-        Expr::While(Box::new(cond), stmts)
+        Expr::While(Box::new(cond), stmts, start..end)
       }
 
   pub rule binary_op() -> Expr = precedence! {
-    lhs:@ _ "is" _ rhs:(@) { Expr::Equality(Box::new(lhs), Box::new(rhs)) }
+    lhs:@ _ "is" _ start:position!() rhs:(@) { Expr::Equality(Box::new(lhs), Box::new(rhs)) }
     lhs:@ _ "is" _ "not" _ rhs:(@) { Expr::NotEqual(Box::new(lhs), Box::new(rhs)) }
     lhs:@ _ "<" _ rhs:(@) { Expr::LessThan(Box::new(lhs), Box::new(rhs)) }
     lhs:@ _ ">" _ rhs:(@) { Expr::GreaterThan(Box::new(lhs), Box::new(rhs)) }
@@ -172,15 +187,15 @@ peg::parser!(pub grammar parser() for str {
     lhs:@ _ "^" _ rhs:(@) { Expr::Power(Box::new(lhs), Box::new(rhs)) }
     --
 
-    func_name:identifier() _ "(" values:((_ expr:expression() _ {expr}) ** ",") _ ")"
-    { Expr::Call(func_name, values) }
+    start:position!() func_name:identifier() end:position!() _ "(" s2:position!() values:((_ expr:expression() _ {expr}) ** ",") e2:position!() _ ")"
+    { Expr::Call(func_name, values, start..end, s2..e2) }
 
     "(" _ expr:expression() _ ")" { expr }
     lit:literal() { lit }
     li:list() { li }
   }
 
-  pub rule parameters() -> Vec<Expr>
+  pub rule parameters() -> Vec<(Parameter, Range<usize>)>
       = params:(parameter_decl()*) { params }
 
   pub rule return_stmt() -> Type 
@@ -195,11 +210,11 @@ peg::parser!(pub grammar parser() for str {
 
   
   pub rule literal() -> Expr 
-    = number:$(['0'..='9']+) {
-      Expr::Number(number.parse().unwrap())
+    = start:position!() number:$(['0'..='9']+) end:position!() {
+      Expr::Number(number.parse().unwrap(), start..end)
     }
-    / "\"" s:$([^'"'..='"']+) "\"" {
-      Expr::String(s.to_owned())
+    / start:position!() "\"" s:$([^'"'..='"']+) "\"" end:position!() {
+      Expr::String(s.to_owned(), start..end)
     }
     
 
