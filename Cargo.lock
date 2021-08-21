@@ -175,8 +175,11 @@ dependencies = [
 name = "gold-standard"
 version = "0.1.0"
 dependencies = [
+ "cranelift",
  "cranelift-jit",
+ "cranelift-module",
  "libc",
+ "target-lexicon",
 ]
 
 [[package]]
