@@ -4,11 +4,8 @@ use crate::mir::expressions::literal::{Object};
 use std::rc::Rc;
 
 pub mod literal;
-
 pub mod binary;
-
 pub mod function;
-
 pub mod variable;
 
 #[derive(Clone)]

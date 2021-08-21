@@ -17,10 +17,10 @@ impl<'a> Parser<'a> {
       Ok(mut file) => {
         match file.read_to_string(&mut contents) {
           Ok(_) => {},
-          Err(_) => { return Err("Could not write from file".to_owned()); }
+          Err(e) => { return Err(e.to_string()); }
         }
       }
-      Err(_) => { return Err("Could not read file".to_owned()); }
+      Err(e) => { return Err(e.to_string()); }
     }
     Ok(Self {
       filename: filename,

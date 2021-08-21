@@ -148,6 +148,7 @@ dependencies = [
  "cranelift",
  "cranelift-jit",
  "cranelift-module",
+ "gold-backend",
  "gold-frontend",
  "peg",
 ]
@@ -159,6 +160,7 @@ dependencies = [
  "cranelift",
  "cranelift-jit",
  "cranelift-module",
+ "gold-frontend",
 ]
 
 [[package]]

@@ -2,7 +2,7 @@
 // Params:
 // 'a' is of type Int.
 // 'b' is of type String.
-// Returns: String
+// Returns: Int
 fn {
   "Hello, World!"
 }

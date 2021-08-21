@@ -13,3 +13,4 @@ cranelift = "0.76.0"
 cranelift-module = "0.76.0"
 cranelift-jit = "0.76.0"
 gold-frontend = { path =  "../gold-frontend" }
+gold-backend  = { path = "../gold-backend" }

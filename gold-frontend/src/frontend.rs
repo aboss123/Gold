@@ -1,6 +1,13 @@
+use core::ops::Range;
+
+#[derive(Clone, Copy)]
 pub enum Type {
   Int,
+  Float,
+  Number,
   String,
+  Bool,
+  Void
 }
 
 pub struct Parameter {
@@ -12,15 +19,16 @@ pub enum Expr {
   NoExpr,
   Number(u64),
   String(String),
-  Parameter(Parameter),
+  Parameter(Parameter, Range<usize>),
   Function(/* name */ String, /* Stmts */ Vec<Expr>, /* Ret */ Type, /* stmts */ Vec<Expr>),
 
   Else(Vec<Expr>),
   Elif(Box<Expr>, Vec<Expr>),
   If(Box<Expr>, Vec<Expr>, Option<Vec<Expr>>, Option<Box<Expr>>),
 
-  While(Box<Expr>, Vec<Expr>),
+  Call(String, Vec<Expr>),
 
+  While(Box<Expr>, Vec<Expr>),
   List(Vec<Expr>),
 
   // is
@@ -61,8 +69,10 @@ impl From<String> for Type {
 
   fn from(input: String) -> Type {
       match input.as_str() {
-          "Int" => Type::Int,
-          "String" => Type::String,
+          "Int"     => Type::Int,
+          "String"  => Type::String,
+          "Void"    => Type::Void,
+          "Bool"    => Type::Bool,
           _ => Type::Int
       }
   }
@@ -84,13 +94,13 @@ peg::parser!(pub grammar parser() for str {
       }   
 
   pub rule parameter_decl() -> Expr 
-      = _ "//" _ "'" param_name:identifier() "'" _ "is" _ "of" _ "type" _ 
-      ty:identifier() "."
+      = _ "//" _ start:position!() "'" param_name:identifier() "'" _ "is" _ "of" _ "type" _ 
+      ty:identifier() end:position!() "."
       {
           Expr::Parameter(Parameter {
               name: param_name,
               typename: Type::from(ty)
-          })
+          }, start..end)
       }
 
 
@@ -99,6 +109,7 @@ peg::parser!(pub grammar parser() for str {
     
   pub rule expression() -> Expr
       = if_expr()
+      / while_expr()
       / binary_op()
 
   pub rule statements() -> Vec<Expr>
@@ -160,6 +171,9 @@ peg::parser!(pub grammar parser() for str {
     --
     lhs:@ _ "^" _ rhs:(@) { Expr::Power(Box::new(lhs), Box::new(rhs)) }
     --
+
+    func_name:identifier() _ "(" values:((_ expr:expression() _ {expr}) ** ",") _ ")"
+    { Expr::Call(func_name, values) }
 
     "(" _ expr:expression() _ ")" { expr }
     lit:literal() { lit }
