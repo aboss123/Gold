@@ -1,6 +1,6 @@
 use std::{any::Any, collections::HashMap, mem, ops::Range};
 
-use cranelift::{codegen::{Context, ir::function}, codegen, frontend::{FunctionBuilder, FunctionBuilderContext, Variable}, prelude::{AbiParam, Block, EntityRef, InstBuilder, Signature, types, Value}};
+use cranelift::{codegen::{Context, ir::function}, codegen, frontend::{FunctionBuilder, FunctionBuilderContext, Variable}, prelude::{AbiParam, Block, EntityRef, InstBuilder, IntCC, Signature, Value, types}};
 use cranelift::codegen::binemit::NullStackMapSink;
 use cranelift_jit::{JITBuilder, JITModule};
 use cranelift_module::{DataContext, Linkage, Module};
@@ -18,6 +18,8 @@ pub struct Compilation {
 
     uncompiled_functions: Vec<Expr>,
     syntax_analyzer: Analyzer,
+
+    data_context: DataContext,
 }
 
 impl Compilation {
@@ -27,6 +29,7 @@ impl Compilation {
             variable_index: 0,
             uncompiled_functions: functions,
             syntax_analyzer: analyzer,
+            data_context: DataContext::new()
         }
     }
 
@@ -39,7 +42,18 @@ impl Compilation {
             Expr::Number(lit, _) => {
                 builder.ins().iconst(types::I64, *lit)
             }
-            Expr::String(lit, _) => todo!(),
+            Expr::String(lit, _) => {
+                self.data_context.define(lit.to_string().into_boxed_str().into());
+                let data = module.declare_data(lit, Linkage::Export, true, false).unwrap();
+                module.define_data(data, &self.data_context).unwrap();
+                self.data_context.clear();
+                module.finalize_definitions();
+
+                let data_id = module.declare_data_in_func(data, builder.func);
+
+                let string = module.target_config().pointer_type();
+                builder.ins().symbol_value(string, data_id)
+            }
             Expr::Var(name, _) => {
                 let var_sig = self.syntax_analyzer.variables.get(*scope_index, name.to_owned());
                 let var = self.variables.entry(name.to_string()).or_insert({
@@ -77,19 +91,109 @@ impl Compilation {
             Expr::Elif(_, _, _) => todo!(),
             Expr::If(_, _, _, _, _) => todo!(),
             Expr::Call(_, _, _, _) => todo!(),
-            Expr::While(_, _, _) => todo!(),
+            Expr::While(cond, block, _) => {
+                let cond_block = builder.create_block();
+                let while_body = builder.create_block();
+                let exit = builder.create_block();
+                
+                let condition = self.gen_expr(scope_index, cond, module, builder);
+
+                builder.ins().jump(cond_block, &[]);
+                builder.switch_to_block(cond_block);
+
+                // If cond = false jump to exit else go to while block
+                builder.ins().brz(condition, exit, &[]);
+                builder.ins().jump(while_body, &[]);
+
+                builder.switch_to_block(while_body);
+                builder.seal_block(while_body);
+                self.gen_expr(scope_index, block, module, builder);
+
+                builder.ins().jump(cond_block, &[]);
+                builder.switch_to_block(exit);
+
+                builder.seal_block(cond_block);
+                builder.seal_block(exit);
+                builder.ins().iconst(types::I64, 0)
+            }
             Expr::List(_, _) => todo!(),
-            Expr::Equality(_, _) => todo!(),
-            Expr::NotEqual(_, _) => todo!(),
-            Expr::GreaterThan(_, _) => todo!(),
-            Expr::LessThan(_, _) => todo!(),
-            Expr::GreaterThanEqual(_, _) => todo!(),
-            Expr::LessThanEqual(_, _) => todo!(),
-            Expr::Addition(_, _) => todo!(),
-            Expr::Subtraction(_, _) => todo!(),
-            Expr::Multiplication(_, _) => todo!(),
-            Expr::Division(_, _) => todo!(),
-            Expr::Power(_, _) => todo!(),
+
+
+            Expr::Equality(lhs, rhs) => {
+                let left = self.gen_expr(scope_index, lhs, module, builder);
+                let right = self.gen_expr(scope_index, rhs, module, builder);
+                let compare = builder.ins().icmp(IntCC::Equal, left, right);
+                builder.ins().bint(
+                    lhs.get_type(&self.syntax_analyzer.functions, &self.syntax_analyzer.variables.scopes.get(*scope_index).unwrap()).into(),
+                        compare
+                )
+            }
+            Expr::NotEqual(lhs, rhs) => {
+                let left = self.gen_expr(scope_index, lhs, module, builder);
+                let right = self.gen_expr(scope_index, rhs, module, builder);
+                let compare = builder.ins().icmp(IntCC::NotEqual, left, right);
+                builder.ins().bint(
+                    lhs.get_type(&self.syntax_analyzer.functions, &self.syntax_analyzer.variables.scopes.get(*scope_index).unwrap()).into(),
+                        compare
+                )
+            }
+            Expr::GreaterThan(lhs, rhs) => {
+                let left = self.gen_expr(scope_index, lhs, module, builder);
+                let right = self.gen_expr(scope_index, rhs, module, builder);
+                let compare = builder.ins().icmp(IntCC::SignedGreaterThan, left, right);
+                builder.ins().bint(
+                    lhs.get_type(&self.syntax_analyzer.functions, &self.syntax_analyzer.variables.scopes.get(*scope_index).unwrap()).into(),
+                        compare
+                )
+            }
+            Expr::LessThan(lhs, rhs) => {
+                let left = self.gen_expr(scope_index, lhs, module, builder);
+                let right = self.gen_expr(scope_index, rhs, module, builder);
+                let compare = builder.ins().icmp(IntCC::SignedLessThan, left, right);
+                builder.ins().bint(
+                    lhs.get_type(&self.syntax_analyzer.functions, &self.syntax_analyzer.variables.scopes.get(*scope_index).unwrap()).into(),
+                        compare
+                )
+            }
+            Expr::GreaterThanEqual(lhs, rhs) => {
+                let left = self.gen_expr(scope_index, lhs, module, builder);
+                let right = self.gen_expr(scope_index, rhs, module, builder);
+                let compare = builder.ins().icmp(IntCC::SignedGreaterThanOrEqual, left, right);
+                builder.ins().bint(
+                    lhs.get_type(&self.syntax_analyzer.functions, &self.syntax_analyzer.variables.scopes.get(*scope_index).unwrap()).into(),
+                        compare
+                )
+            }
+            Expr::LessThanEqual(lhs, rhs) => {
+                let left = self.gen_expr(scope_index, lhs, module, builder);
+                let right = self.gen_expr(scope_index, rhs, module, builder);
+                let compare = builder.ins().icmp(IntCC::SignedLessThanOrEqual, left, right);
+                builder.ins().bint(
+                    lhs.get_type(&self.syntax_analyzer.functions, &self.syntax_analyzer.variables.scopes.get(*scope_index).unwrap()).into(),
+                        compare
+                )
+            }
+            Expr::Addition(lhs, rhs) => {
+                let left = self.gen_expr(scope_index, lhs, module, builder);
+                let right = self.gen_expr(scope_index, rhs, module, builder);
+                builder.ins().iadd(left, right)
+            }
+            Expr::Subtraction(lhs, rhs) => {
+                let left = self.gen_expr(scope_index, lhs, module, builder);
+                let right = self.gen_expr(scope_index, rhs, module, builder);
+                builder.ins().isub(left, right)
+            }
+            Expr::Multiplication(lhs, rhs) => {
+                let left = self.gen_expr(scope_index, lhs, module, builder);
+                let right = self.gen_expr(scope_index, rhs, module, builder);
+                builder.ins().imul(left, right)
+            }
+            Expr::Division(lhs, rhs) => {
+                let left = self.gen_expr(scope_index, lhs, module, builder);
+                let right = self.gen_expr(scope_index, rhs, module, builder);
+                builder.ins().udiv(left, right)
+            }
+            Expr::Power(lhs, rhs) => todo!(),
             _ => todo!()
         }
     }
@@ -135,18 +239,10 @@ impl Compilation {
                 let entry = function_builder.borrow_mut().create_block();
                 function_builder.borrow_mut().append_block_params_for_function_params(entry);
 
-                                // Start codegen at the entry block and seal it to tell Cranelift 
+                // Start codegen at the entry block and seal it to tell Cranelift 
                 // that we have no blocks previous to this one.
                 function_builder.borrow_mut().switch_to_block(entry);
                 function_builder.borrow_mut().seal_block(entry);
-
-                // // Initialize parameters for the entry block
-                // for pos in 0..params.len() {
-                //     let val = function_builder.borrow().block_params(entry)[pos];
-                //     let var = parameters.get(pos).unwrap();
-                //     function_builder.borrow_mut().declare_var(var.0, var.1);
-                //     function_builder.borrow_mut().def_var((*var).0, val);
-                // }
 
                 //========================================================================================
                 let mut define_variable = |ty, name: &String| {

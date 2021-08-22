@@ -135,5 +135,6 @@ pub fn report_parse_error(filename: &str, source: &str, err: ParseError<LineCol>
     let writer = StandardStream::stderr(ColorChoice::Always);
     let config = codespan_reporting::term::Config::default();
     codespan_reporting::term::emit(&mut writer.lock(), &config, &file_handler, &err)?;
+    std::process::exit(1);
     Ok(())
 }
