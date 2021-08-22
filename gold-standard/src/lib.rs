@@ -7,3 +7,5 @@ mod io;
 mod mem;
 
 mod string;
+
+mod math;
