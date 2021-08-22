@@ -12,11 +12,13 @@ pub enum Type {
     Void,
 }
 
+#[derive(Clone)]
 pub struct Parameter {
     pub name: String,
     pub typename: Type,
 }
 
+#[derive(Clone)]
 pub enum Expr {
     NoExpr,
     Number(i64, Range<usize>),
@@ -170,6 +172,8 @@ peg::parser!(pub grammar parser() for str {
       / while_expr()
       / binary_op()
       / block()
+      / assignment()
+      / reassignment()
 
   pub rule statements() -> Vec<Expr>
       = stmt:(expression()*) { stmt }

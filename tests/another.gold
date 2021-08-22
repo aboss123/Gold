@@ -4,7 +4,5 @@
 // 'b' is of type String.
 // Returns: Int
 fn {
-  if 5 < "SDSD" {
-
-  }
+  var a = 23
 }
