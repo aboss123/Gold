@@ -116,14 +116,9 @@ impl Compilation {
                 let mut fn_signature = module.make_signature();
                 fn_signature.returns.push(ty.into());
 
-                // Setup variable parameters
-                let parameters = params.iter().map(|p| {
-                    let var = Variable::new(self.variable_index);
-                    self.variables.insert(p.0.name.to_owned(), var);
-                    self.variable_index += 1;
+                for p in &params {
                     fn_signature.params.push(p.0.typename.into());
-                    (var, p.0.typename.into())
-                }).collect::<Vec<(Variable, types::Type)>>();
+                }
 
 
                 let function_id = module
@@ -142,14 +137,13 @@ impl Compilation {
                 let entry = function_builder.borrow_mut().create_block();
                 function_builder.borrow_mut().append_block_params_for_function_params(entry);
 
-                // Initialize parameters for the entry block
-                for pos in 0..params.len() {
-                    let val = function_builder.borrow().block_params(entry)[pos];
-                    let var = parameters.get(pos).unwrap();
-                    function_builder.borrow_mut().declare_var(var.0, var.1);
-                    function_builder.borrow_mut().def_var((*var).0, val);
-                }
-
+                // // Initialize parameters for the entry block
+                // for pos in 0..params.len() {
+                //     let val = function_builder.borrow().block_params(entry)[pos];
+                //     let var = parameters.get(pos).unwrap();
+                //     function_builder.borrow_mut().declare_var(var.0, var.1);
+                //     function_builder.borrow_mut().def_var((*var).0, val);
+                // }
 
                 //========================================================================================
                 let mut define_variable = |ty, name: &String| {
@@ -162,6 +156,14 @@ impl Compilation {
                     var
                 };
                 //========================================================================================
+
+
+                for (pos, param) in params.iter().enumerate() {
+                    let val = function_builder.borrow_mut().block_params(entry)[pos];
+                    let var =  define_variable(param.0.typename.into(), &param.0.name.to_owned());
+                    function_builder.borrow_mut().def_var(var, val);
+                }
+
 
                 let zero = function_builder.borrow_mut().ins().iconst(types::I32, 0);
                 let return_variable = define_variable(types::I32, &"why".to_owned());
