@@ -155,8 +155,8 @@ impl Lower for Expr {
                     }
                 }
             }
-            Expr::Number(_, _) => todo!(),
-            Expr::String(_, _) => todo!(),
+            Expr::Number(_, _) => {},
+            Expr::String(_, _) => {},
             Expr::Parameter(_, _) => todo!(),
             Expr::Function(name, params, ty, block, loc) => {
                 // Add the function scope

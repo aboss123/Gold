@@ -51,7 +51,13 @@ impl Compilation {
             }
             Expr::Assign(name, value, _) => {
                 let val = self.gen_expr(scope_index, value, module, builder);
-                let var = self.variables.get(name).unwrap();
+                let var_sig = self.syntax_analyzer.variables.get(*scope_index, name.to_owned());
+                let var = self.variables.entry(name.to_string()).or_insert({
+                    let var = Variable::new(self.variable_index);
+                    builder.declare_var(var, var_sig.ty.into());
+                    var
+                });
+                builder.declare_var(Variable::new(self.variable_index), types::I64);
 
                 builder.def_var(*var, val);
                 val
@@ -116,8 +122,8 @@ impl Compilation {
                     self.variables.insert(p.0.name.to_owned(), var);
                     self.variable_index += 1;
                     fn_signature.params.push(p.0.typename.into());
-                    var
-                }).collect::<Vec<Variable>>();
+                    (var, p.0.typename.into())
+                }).collect::<Vec<(Variable, types::Type)>>();
 
 
                 let function_id = module
@@ -140,7 +146,8 @@ impl Compilation {
                 for pos in 0..params.len() {
                     let val = function_builder.borrow().block_params(entry)[pos];
                     let var = parameters.get(pos).unwrap();
-                    function_builder.borrow_mut().def_var(*var, val);
+                    function_builder.borrow_mut().declare_var(var.0, var.1);
+                    function_builder.borrow_mut().def_var((*var).0, val);
                 }
 
 

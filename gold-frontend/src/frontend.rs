@@ -168,15 +168,16 @@ peg::parser!(pub grammar parser() for str {
       {Expr::List(values, start..end)}
     
   pub rule expression() -> Expr
-      = if_expr()
-      / while_expr()
-      / binary_op()
-      / block()
+      = 
+      binary_op()
       / assignment()
       / reassignment()
+      / block()
+      / if_expr()
+      / while_expr()
 
   pub rule statements() -> Vec<Expr>
-      = stmt:(expression()*) { stmt }
+      = stmt:(assignment()*) { stmt }
   
   pub rule else_expr() -> Expr
       = start:position!() "else" _ body:block() end:position!()
