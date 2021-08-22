@@ -1,8 +1,5 @@
 use std::collections::HashMap;
-use std::hash::Hash;
 use std::ops::Range;
-
-use cranelift::codegen::ir::Inst;
 
 use gold_frontend::error::{report_type_error, TypeError};
 use gold_frontend::frontend::{Expr, Type};
@@ -13,13 +10,41 @@ pub struct FuncSig {
     error_metadata: Range<usize>,
 }
 
+#[derive(Clone)]
 pub struct VarSig {
     ty: Type,
 }
 
+struct VariableRegistry {
+    scopes: Vec<HashMap<String, VarSig>>,
+}
+
+impl VariableRegistry {
+    fn new() -> Self {
+        Self {
+            scopes: vec![HashMap::new()],
+        }
+    }
+
+    fn unify(&self) -> HashMap<String, VarSig> {
+        let mut unified_scope = HashMap::new();
+
+        for x in self.scopes.iter() {
+            let cloned = x.to_owned();
+            unified_scope.extend(cloned);
+        }
+
+        unified_scope
+    }
+
+    fn top_stack(&mut self) -> &mut HashMap<String, VarSig> {
+        self.scopes.last_mut().unwrap()
+    }
+}
+
 pub struct Analysis {
     functions: HashMap<String, FuncSig>,
-    variables: HashMap<String, VarSig>,
+    variables: VariableRegistry,
     source: String,
     filename: String,
     errors: usize,
@@ -29,7 +54,7 @@ impl Analysis {
     pub fn new(src: String, filename: String) -> Self {
         Self {
             functions: HashMap::new(),
-            variables: HashMap::new(),
+            variables: VariableRegistry::new(),
             source: src,
             filename: filename,
             errors: 0,
@@ -77,10 +102,11 @@ impl Lower for Expr {
     }
 
     fn lower_expr(&self, typechecker: &mut Analysis) {
+        let unified_theory_of_shit = typechecker.variables.unify();
         match self {
             Expr::NoExpr => unreachable!(),
             Expr::Var(sym, err) => {
-                match typechecker.variables.get(sym) {
+                match unified_theory_of_shit.get(sym) {
                     Some(var) => {}
                     None => {
                         report_type_error(TypeError::NotDefined(err.to_owned()), typechecker.filename.as_str(), typechecker.source.as_str());
@@ -88,11 +114,13 @@ impl Lower for Expr {
                 }
             }
             Expr::Assign(name, expr, _) => {
-                typechecker.variables.insert(name.to_owned(), VarSig { ty: expr.get_type(&typechecker.functions, &typechecker.variables) });
+                let ts = typechecker.variables.top_stack();
+                let fun = &typechecker.functions;
+                ts.insert(name.to_owned(), VarSig { ty: expr.get_type(fun, &unified_theory_of_shit) });
                 expr.lower_expr(typechecker);
             }
             Expr::Reassign(name, expr, err) => {
-                match typechecker.variables.get(name) {
+                match typechecker.variables.unify().get(name) {
                     Some(_) => { expr.lower_expr(typechecker); }
                     None => {
                         report_type_error(TypeError::NotDefined(err.to_owned()), typechecker.filename.as_str(), typechecker.source.as_str());
@@ -131,7 +159,7 @@ impl Lower for Expr {
                         }
                         for (pos, arg) in args.iter().enumerate() {
                             let (ty, def) = func.param_types.get(pos).unwrap();
-                            let arg_type = arg.get_type(&typechecker.functions, &typechecker.variables);
+                            let arg_type = arg.get_type(&typechecker.functions, &HashMap::new());
                             if arg_type != *ty {
                                 report_type_error(TypeError::IncorrectTypeValueForArgument(def.to_owned(), arg.expression_range(), *ty, arg_type), typechecker.filename.as_str(), typechecker.source.as_str());
                             }
@@ -148,67 +176,67 @@ impl Lower for Expr {
             }
             Expr::List(_, _) => todo!(),
             Expr::Equality(lhs, rhs) => {
-                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &typechecker.variables), rhs.get_type(&typechecker.functions, &typechecker.variables));
+                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &unified_theory_of_shit), rhs.get_type(&typechecker.functions, &unified_theory_of_shit));
                 if lhs_ty != rhs_ty {
                     report_type_error(TypeError::InvaidTypesForOperation(lhs.expression_range(), rhs.expression_range(), lhs_ty, rhs_ty), typechecker.filename.as_str(), typechecker.source.as_str());
                 }
             }
             Expr::NotEqual(lhs, rhs) => {
-                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &typechecker.variables), rhs.get_type(&typechecker.functions, &typechecker.variables));
+                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &unified_theory_of_shit), rhs.get_type(&typechecker.functions, &unified_theory_of_shit));
                 if lhs_ty != rhs_ty {
                     report_type_error(TypeError::InvaidTypesForOperation(lhs.expression_range(), rhs.expression_range(), lhs_ty, rhs_ty), typechecker.filename.as_str(), typechecker.source.as_str());
                 }
             }
             Expr::GreaterThan(lhs, rhs) => {
-                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &typechecker.variables), rhs.get_type(&typechecker.functions, &typechecker.variables));
+                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &typechecker.variables.unify()), rhs.get_type(&typechecker.functions, &typechecker.variables.unify()));
                 if lhs_ty != rhs_ty {
                     report_type_error(TypeError::InvaidTypesForOperation(lhs.expression_range(), rhs.expression_range(), lhs_ty, rhs_ty), typechecker.filename.as_str(), typechecker.source.as_str());
                 }
             }
             Expr::LessThan(lhs, rhs) => {
-                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &typechecker.variables), rhs.get_type(&typechecker.functions, &typechecker.variables));
+                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &unified_theory_of_shit), rhs.get_type(&typechecker.functions, &unified_theory_of_shit));
                 if lhs_ty != rhs_ty {
                     report_type_error(TypeError::InvaidTypesForOperation(lhs.expression_range(), rhs.expression_range(), lhs_ty, rhs_ty), typechecker.filename.as_str(), typechecker.source.as_str());
                 }
             }
             Expr::GreaterThanEqual(lhs, rhs) => {
-                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &typechecker.variables), rhs.get_type(&typechecker.functions, &typechecker.variables));
+                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &unified_theory_of_shit), rhs.get_type(&typechecker.functions, &unified_theory_of_shit));
                 if lhs_ty != rhs_ty {
                     report_type_error(TypeError::InvaidTypesForOperation(lhs.expression_range(), rhs.expression_range(), lhs_ty, rhs_ty), typechecker.filename.as_str(), typechecker.source.as_str());
                 }
             }
             Expr::LessThanEqual(lhs, rhs) => {
-                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &typechecker.variables), rhs.get_type(&typechecker.functions, &typechecker.variables));
+                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &unified_theory_of_shit), rhs.get_type(&typechecker.functions, &unified_theory_of_shit));
                 if lhs_ty != rhs_ty {
                     report_type_error(TypeError::InvaidTypesForOperation(lhs.expression_range(), rhs.expression_range(), lhs_ty, rhs_ty), typechecker.filename.as_str(), typechecker.source.as_str());
                 }
             }
             Expr::Addition(lhs, rhs) => {
-                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &typechecker.variables), rhs.get_type(&typechecker.functions, &typechecker.variables));
+                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &unified_theory_of_shit), rhs.get_type(&typechecker.functions, &unified_theory_of_shit));
                 if lhs_ty != rhs_ty {
                     report_type_error(TypeError::InvaidTypesForOperation(lhs.expression_range(), rhs.expression_range(), lhs_ty, rhs_ty), typechecker.filename.as_str(), typechecker.source.as_str());
                 }
             }
             Expr::Subtraction(lhs, rhs) => {
-                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &typechecker.variables), rhs.get_type(&typechecker.functions, &typechecker.variables));
+                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &unified_theory_of_shit), rhs.get_type(&typechecker.functions, &unified_theory_of_shit));
                 if lhs_ty != rhs_ty {
                     report_type_error(TypeError::InvaidTypesForOperation(lhs.expression_range(), rhs.expression_range(), lhs_ty, rhs_ty), typechecker.filename.as_str(), typechecker.source.as_str());
                 }
             }
             Expr::Multiplication(lhs, rhs) => {
-                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &typechecker.variables), rhs.get_type(&typechecker.functions, &typechecker.variables));
+                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &unified_theory_of_shit), rhs.get_type(&typechecker.functions, &unified_theory_of_shit));
                 if lhs_ty != rhs_ty {
                     report_type_error(TypeError::InvaidTypesForOperation(lhs.expression_range(), rhs.expression_range(), lhs_ty, rhs_ty), typechecker.filename.as_str(), typechecker.source.as_str());
                 }
             }
             Expr::Division(lhs, rhs) => {
-                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &typechecker.variables), rhs.get_type(&typechecker.functions, &typechecker.variables));
+                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &unified_theory_of_shit), rhs.get_type(&typechecker.functions, &unified_theory_of_shit));
                 if lhs_ty != rhs_ty {
                     report_type_error(TypeError::InvaidTypesForOperation(lhs.expression_range(), rhs.expression_range(), lhs_ty, rhs_ty), typechecker.filename.as_str(), typechecker.source.as_str());
                 }
             }
             Expr::Power(lhs, rhs) => {
-                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &typechecker.variables), rhs.get_type(&typechecker.functions, &typechecker.variables));
+                let (lhs_ty, rhs_ty) = (lhs.get_type(&typechecker.functions, &unified_theory_of_shit), rhs.get_type(&typechecker.functions, &unified_theory_of_shit));
                 if lhs_ty != rhs_ty {
                     report_type_error(TypeError::InvaidTypesForOperation(lhs.expression_range(), rhs.expression_range(), lhs_ty, rhs_ty), typechecker.filename.as_str(), typechecker.source.as_str());
                 }
