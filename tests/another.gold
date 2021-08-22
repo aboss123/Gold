@@ -4,8 +4,5 @@
 // 'b' is of type Int.
 // Returns: Int
 fn {
-  var cool = 10;
-  while cool > 0 {
-    cool = cool - 1;
-  }
+  print("Hello, World!")
 }
