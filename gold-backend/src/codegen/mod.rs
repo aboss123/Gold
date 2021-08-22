@@ -90,7 +90,20 @@ impl Compilation {
             Expr::Else(_, _) => todo!(),
             Expr::Elif(_, _, _) => todo!(),
             Expr::If(_, _, _, _, _) => todo!(),
-            Expr::Call(_, _, _, _) => todo!(),
+            Expr::Call(name, args, _, _) => {
+                let mut fn_sig = module.make_signature();
+                let mut arg_values = Vec::new();
+                for arg in args {
+                    arg_values.push(self.gen_expr(scope_index, arg, module, builder));
+                    fn_sig.params.push(arg.get_type(&self.syntax_analyzer.functions, &self.syntax_analyzer.variables.scopes.get(*scope_index).unwrap()).into());
+                }
+                fn_sig.returns.push(self.syntax_analyzer.functions.get(name).unwrap().return_type.into());
+
+                let func = module.declare_function(&name, Linkage::Import, &fn_sig).unwrap();
+                let func_ref = module.declare_func_in_func(func, &mut builder.func);
+                let call = builder.ins().call(func_ref, &arg_values);
+                builder.inst_results(call)[0]
+            }
             Expr::While(cond, block, _) => {
                 let cond_block = builder.create_block();
                 let while_body = builder.create_block();
