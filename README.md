@@ -1,7 +1,8 @@
 # Gold
 
 The Gold Rush began in 1948. This programming language is developed in 48-hours. Coincidence, I
-think not!
+think not! 
+> Created for the [LangJam 2021](https://github.com/langjam/langjam) 
 
 ## What is Gold?
 
@@ -34,7 +35,7 @@ cargo install --path ./gold
 
 ### Looping
 
-```text
+```zig
 // foo is a function.
 // Params:
 // 'a' is of type Int.
@@ -50,7 +51,7 @@ fn {
 
 ### Printing
 
-```
+```zig
 // hello is a function.
 // Params:
 // Returns: Void
