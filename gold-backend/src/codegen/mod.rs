@@ -57,8 +57,6 @@ impl Compilation {
                     builder.declare_var(var, var_sig.ty.into());
                     var
                 });
-                builder.declare_var(Variable::new(self.variable_index), types::I64);
-
                 builder.def_var(*var, val);
                 val
             }
@@ -137,6 +135,11 @@ impl Compilation {
                 let entry = function_builder.borrow_mut().create_block();
                 function_builder.borrow_mut().append_block_params_for_function_params(entry);
 
+                                // Start codegen at the entry block and seal it to tell Cranelift 
+                // that we have no blocks previous to this one.
+                function_builder.borrow_mut().switch_to_block(entry);
+                function_builder.borrow_mut().seal_block(entry);
+
                 // // Initialize parameters for the entry block
                 // for pos in 0..params.len() {
                 //     let val = function_builder.borrow().block_params(entry)[pos];
@@ -165,14 +168,9 @@ impl Compilation {
                 }
 
 
-                let zero = function_builder.borrow_mut().ins().iconst(types::I32, 0);
-                let return_variable = define_variable(types::I32, &"why".to_owned());
+                let zero = function_builder.borrow_mut().ins().iconst(types::I64, 0);
+                let return_variable = define_variable(types::I64, &"why".to_owned());
                 function_builder.borrow_mut().def_var(return_variable, zero);
-
-                // Start codegen at the entry block and seal it to tell Cranelift 
-                // that we have no blocks previous to this one.
-                function_builder.borrow_mut().switch_to_block(entry);
-                function_builder.borrow_mut().seal_block(entry);
 
                 // Generate Cranelift IR for function body
                 let variable_index = self.syntax_analyzer.functions.get(&name).unwrap().scope_index;

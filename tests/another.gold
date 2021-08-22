@@ -4,5 +4,5 @@
 // 'b' is of type Int.
 // Returns: Int
 fn {
-  var a = 23
+  var something = 23
 }

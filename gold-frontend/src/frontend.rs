@@ -103,7 +103,7 @@ impl From<Type> for AbiParam {
     #[inline]
     fn from(ty: Type) -> Self {
         match ty {
-          Type::Int =>  AbiParam::new(types::I32),
+          Type::Int =>  AbiParam::new(types::I64),
           Type::Float => AbiParam::new(types::F32),
           Type::String => todo!(),
           Type::Bool => AbiParam::new(types::B1),
