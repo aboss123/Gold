@@ -2,99 +2,97 @@ use core::ops::Range;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Type {
-  Int,
-  Float,
-  Number,
-  String,
-  Bool,
-  Void
+    Int,
+    Float,
+    Number,
+    String,
+    Bool,
+    Void,
 }
 
 pub struct Parameter {
-  pub name: String,
-  pub typename: Type
+    pub name: String,
+    pub typename: Type,
 }
 
 pub enum Expr {
-  NoExpr,
-  Number(u64, Range<usize>),
-  String(String, Range<usize>),
-  Var(String, Range<usize>),
-  Parameter(Parameter, Range<usize>),
-  Function(/* name */ String, /* params */ Vec<(Parameter, Range<usize>)>, /* Ret */ Type, /* stmts */ Vec<Expr>, Range<usize>),
+    NoExpr,
+    Number(u64, Range<usize>),
+    String(String, Range<usize>),
+    Var(String, Range<usize>),
+    Parameter(Parameter, Range<usize>),
+    Function(/* name */ String, /* params */ Vec<(Parameter, Range<usize>)>, /* Ret */ Type, /* stmts */ Vec<Expr>, Range<usize>),
 
-  Else(Vec<Expr>, Range<usize>),
-  Elif(Box<Expr>, Vec<Expr>, Range<usize>),
-  If(Box<Expr>, Vec<Expr>, Option<Vec<Expr>>, Option<Box<Expr>>, Range<usize>),
+    Else(Vec<Expr>, Range<usize>),
+    Elif(Box<Expr>, Vec<Expr>, Range<usize>),
+    If(Box<Expr>, Vec<Expr>, Option<Vec<Expr>>, Option<Box<Expr>>, Range<usize>),
 
-  Call(String, Vec<Expr>, Range<usize>, Range<usize>),
+    Call(String, Vec<Expr>, Range<usize>, Range<usize>),
 
-  While(Box<Expr>, Vec<Expr>, Range<usize>),
-  List(Vec<Expr>, Range<usize>),
+    While(Box<Expr>, Vec<Expr>, Range<usize>),
+    List(Vec<Expr>, Range<usize>),
 
-  Assign(String, Box<Expr>, Range<usize>),
-  Reassign(String, Box<Expr>, Range<usize>),
+    Assign(String, Box<Expr>, Range<usize>),
+    Reassign(String, Box<Expr>, Range<usize>),
 
-  // is
-  Equality(Box<Expr>, Box<Expr>),
+    // is
+    Equality(Box<Expr>, Box<Expr>),
 
-  // !is
-  NotEqual(Box<Expr>, Box<Expr>),
+    // !is
+    NotEqual(Box<Expr>, Box<Expr>),
 
-  // >
-  GreaterThan(Box<Expr>, Box<Expr>),
+    // >
+    GreaterThan(Box<Expr>, Box<Expr>),
 
-  // <
-  LessThan(Box<Expr>, Box<Expr>),
+    // <
+    LessThan(Box<Expr>, Box<Expr>),
 
-  // >=
-  GreaterThanEqual(Box<Expr>, Box<Expr>),
+    // >=
+    GreaterThanEqual(Box<Expr>, Box<Expr>),
 
-  // <=
-  LessThanEqual(Box<Expr>, Box<Expr>),
+    // <=
+    LessThanEqual(Box<Expr>, Box<Expr>),
 
-  // +
-  Addition(Box<Expr>, Box<Expr>),
+    // +
+    Addition(Box<Expr>, Box<Expr>),
 
-  // -
-  Subtraction(Box<Expr>, Box<Expr>),
+    // -
+    Subtraction(Box<Expr>, Box<Expr>),
 
-  // *
-  Multiplication(Box<Expr>, Box<Expr>),
+    // *
+    Multiplication(Box<Expr>, Box<Expr>),
 
-  // /
-  Division(Box<Expr>, Box<Expr>),
+    // /
+    Division(Box<Expr>, Box<Expr>),
 
-  // Exponent
-  Power(Box<Expr>, Box<Expr>)
+    // Exponent
+    Power(Box<Expr>, Box<Expr>),
 }
 
 impl From<String> for Type {
-
-  fn from(input: String) -> Type {
-      match input.as_str() {
-          "Int"     => Type::Int,
-          "String"  => Type::String,
-          "Void"    => Type::Void,
-          "Bool"    => Type::Bool,
-          _ => Type::Int
-      }
-  }
+    fn from(input: String) -> Type {
+        match input.as_str() {
+            "Int" => Type::Int,
+            "String" => Type::String,
+            "Void" => Type::Void,
+            "Bool" => Type::Bool,
+            _ => Type::Int
+        }
+    }
 }
 
 
 impl Type {
-
-  pub fn as_str(&mut self) -> &str {
-    match self {
-        Type::Int => "Int",
-        Type::Float => "Float",
-        Type::Number => "Number",
-        Type::String => "String",
-        Type::Bool => "Bool",
-        Type::Void => "Void",
+    pub fn as_str(&mut self) -> &str {
+        match self {
+            Type::Int => "Int",
+            Type::Float => "Float",
+            Type::Number => "Number",
+            Type::String => "String",
+            Type::Bool => "Bool",
+            Type::Void => "Void",
+        }
     }
-  }
 }
 
 

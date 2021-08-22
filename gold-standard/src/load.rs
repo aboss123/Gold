@@ -1,13 +1,13 @@
+use std::collections::HashMap;
 use std::mem::transmute;
 
 use cranelift::prelude::*;
 use cranelift_jit::{JITBuilder, JITModule};
-use cranelift_module::{Module, Linkage, FuncId};
+use cranelift_module::{FuncId, Linkage, Module};
 use target_lexicon::Triple;
 
 use crate::io::{print, println};
 use crate::mem::{free, malloc};
-use std::collections::HashMap;
 
 const SYMBOLS: [(&str, *const u8); 4] = [
     ("print", unsafe { transmute(print as unsafe extern "C" fn(_) -> _) }),

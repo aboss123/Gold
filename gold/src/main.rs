@@ -1,8 +1,9 @@
-use gold_frontend::frontend;
-use gold_backend::{analysis::lower::Lower, lir};
 use peg::{error::ParseError, str::LineCol};
-use gold_frontend::parse::{Parser};
+
+use gold_backend::{analysis::lower::Lower, lir};
 use gold_backend::analysis::lower::Analysis;
+use gold_frontend::frontend;
+use gold_frontend::parse::Parser;
 
 fn main() -> Result<(), String> {
     let mut parser = Parser::new("tests/another.gold")?;
