@@ -145,11 +145,11 @@ peg::parser!(pub grammar parser() for str {
       }
 
   pub rule assignment() -> Expr 
-      = start:position!() "var" _ i:identifier() _ "=" _ e:binary_op() end:position!()
+      = start:position!() "var" _ i:identifier() _ "=" _ e:binary_op() ";" end:position!()
       { Expr::Assign(i, Box::new(e), start..end) }
 
   pub rule reassignment() -> Expr 
-      = start:position!() i:identifier() _ "=" _ e:binary_op() end:position!()
+      = start:position!() i:identifier() _ "=" _ e:binary_op() ";" end:position!()
       { Expr::Reassign(i, Box::new(e), start..end) }
 
   pub rule parameter_decl() -> (Parameter, Range<usize>)
@@ -169,11 +169,9 @@ peg::parser!(pub grammar parser() for str {
     
   pub rule expression() -> Expr
       = 
-      assignment()
-      / if_expr()
-      / while_expr()
+      while_expr()
       / reassignment()
-      / block()
+      / while_expr()
 
   pub rule statements() -> Vec<Expr>
       = stmt:(expression()*) { stmt }
