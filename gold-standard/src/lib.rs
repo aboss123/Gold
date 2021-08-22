@@ -1,6 +1,6 @@
 pub use load::{load_symbols, declare_functions};
 
-mod load;
+pub mod load;
 
 mod io;
 

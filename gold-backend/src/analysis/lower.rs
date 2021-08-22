@@ -3,11 +3,12 @@ use std::ops::Range;
 
 use gold_frontend::error::{report_type_error, TypeError};
 use gold_frontend::frontend::{Expr, Type};
+use gold_standard::load::{PRINT_SYMBOL, PRINTLN_SYMBOL};
 
 pub struct FuncSig {
     pub return_type: Type,
     pub param_types: Vec<(Type, Range<usize>)>,
-    pub scope_index: usize
+    pub scope_index: usize,
 }
 
 #[derive(Clone)]
@@ -60,8 +61,19 @@ pub struct Analyzer {
 
 impl Analyzer {
     pub fn new(src: String, filename: String) -> Self {
+        let mut functions = HashMap::new();
+        functions.insert(PRINT_SYMBOL.to_owned(), FuncSig {
+            return_type: Type::Int,
+            param_types: vec![(Type::String, Range::default())],
+            scope_index: 0,
+        });
+        functions.insert(PRINTLN_SYMBOL.to_owned(), FuncSig {
+            return_type: Type::Int,
+            param_types: vec![(Type::String, Range::default())],
+            scope_index: 0,
+        });
         Self {
-            functions: HashMap::new(),
+            functions,
             variables: VariableRegistry::new(),
             source: src,
             filename: filename,
@@ -155,8 +167,8 @@ impl Lower for Expr {
                     }
                 }
             }
-            Expr::Number(_, _) => {},
-            Expr::String(_, _) => {},
+            Expr::Number(_, _) => {}
+            Expr::String(_, _) => {}
             Expr::Parameter(_, _) => todo!(),
             Expr::Function(name, params, ty, block, loc) => {
                 // Add the function scope
@@ -164,7 +176,7 @@ impl Lower for Expr {
                 typechecker.functions.insert(name.to_owned(), FuncSig {
                     return_type: *ty,
                     param_types: params.iter().map(|p| ((*p).0.typename, (*p).1.to_owned())).collect::<Vec<(Type, Range<usize>)>>(),
-                    scope_index: typechecker.variables.scopes.len() - 1
+                    scope_index: typechecker.variables.scopes.len() - 1,
                 });
                 block.typecheck(typechecker);
             }

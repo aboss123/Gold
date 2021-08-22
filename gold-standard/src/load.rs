@@ -10,25 +10,31 @@ use crate::io::{print, println};
 use crate::math::ipowi;
 use crate::mem::{free, malloc};
 
-const PRINT_SYMBOL: &str = "print";
-const PRINT_ADDRESS: *const u8 = unsafe { transmute(print as unsafe extern "C" fn(_) -> _) };
+pub const PRINT_SYMBOL: &str = "print";
+pub const PRINT_ADDRESS: *const u8 = unsafe { transmute(print as unsafe extern "C" fn(_) -> _) };
 
-const PRINTLN_SYMBOL: &str = "println";
-const PRINTLN_ADDRESS: *const u8 = unsafe { transmute(println as unsafe extern "C" fn(_) -> _) };
+pub const PRINTLN_SYMBOL: &str = "println";
+pub const PRINTLN_ADDRESS: *const u8 = unsafe {
+    transmute(println as unsafe extern "C" fn(_) ->
+    _)
+};
 
-const MALLOC_SYMBOL: &str = "malloc";
-const MALLOC_ADDRESS: *const u8 = unsafe { transmute(malloc as unsafe extern "C" fn(_) -> _) };
+pub const MALLOC_SYMBOL: &str = "malloc";
+pub const MALLOC_ADDRESS: *const u8 = unsafe { transmute(malloc as unsafe extern "C" fn(_) -> _) };
 
-const FREE_SYMBOL: &str = "free";
-const FREE_ADDRESS: *const u8 = unsafe { transmute(free as unsafe extern "C" fn(_)) };
+pub const FREE_SYMBOL: &str = "free";
+pub const FREE_ADDRESS: *const u8 = unsafe { transmute(free as unsafe extern "C" fn(_)) };
 
-const IPOWI_SYMBOL: &str = "ipowi";
-const IPOWI_ADDRESS: *const u8 = unsafe { transmute(ipowi as unsafe extern "C" fn(_, _) -> _) };
+pub const IPOWI_SYMBOL: &str = "ipowi";
+pub const IPOWI_ADDRESS: *const u8 = unsafe { transmute(ipowi as unsafe extern "C" fn(_, _) -> _) };
 
-const STRCMP_SYMBOL: &str = "string_compare";
-const STRCMP_ADDRESS: *const u8 = unsafe { transmute(ipowi as unsafe extern "C" fn(_, _) -> _) };
+pub const STRCMP_SYMBOL: &str = "string_compare";
+pub const STRCMP_ADDRESS: *const u8 = unsafe {
+    transmute(ipowi as unsafe extern "C" fn(_, _) ->
+    _)
+};
 
-const SYMBOLS: [(&str, *const u8); 6] = [
+pub const SYMBOLS: [(&str, *const u8); 6] = [
     (PRINT_SYMBOL, PRINT_ADDRESS),
     (PRINTLN_SYMBOL, PRINTLN_ADDRESS),
     (MALLOC_SYMBOL, MALLOC_ADDRESS),
