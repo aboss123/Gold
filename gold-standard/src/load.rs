@@ -25,13 +25,16 @@ const FREE_ADDRESS: *const u8 = unsafe { transmute(free as unsafe extern "C" fn(
 const IPOWI_SYMBOL: &str = "ipowi";
 const IPOWI_ADDRESS: *const u8 = unsafe { transmute(ipowi as unsafe extern "C" fn(_, _) -> _) };
 
+const STRCMP_SYMBOL: &str = "string_compare";
+const STRCMP_ADDRESS: *const u8 = unsafe { transmute(ipowi as unsafe extern "C" fn(_, _) -> _) };
 
-const SYMBOLS: [(&str, *const u8); 5] = [
+const SYMBOLS: [(&str, *const u8); 6] = [
     (PRINT_SYMBOL, PRINT_ADDRESS),
     (PRINTLN_SYMBOL, PRINTLN_ADDRESS),
     (MALLOC_SYMBOL, MALLOC_ADDRESS),
     (FREE_SYMBOL, FREE_ADDRESS),
-    (IPOWI_SYMBOL, IPOWI_ADDRESS)
+    (IPOWI_SYMBOL, IPOWI_ADDRESS),
+    (STRCMP_SYMBOL, STRCMP_ADDRESS),
 ];
 
 pub fn load_symbols(jit_builder: &mut JITBuilder) {
@@ -71,6 +74,7 @@ pub fn declare_functions(module: &mut JITModule) -> HashMap<&'static str, FuncId
     fn_declare(module, &mut ids, MALLOC_SYMBOL, &[int_type.clone()], Some(&ptr_type));
     fn_declare(module, &mut ids, FREE_SYMBOL, &[ptr_type.clone()], None);
     fn_declare(module, &mut ids, IPOWI_SYMBOL, &[int_type.clone(), int_type.clone()], Some(&int_type));
+    fn_declare(module, &mut ids, STRCMP_SYMBOL, &[ptr_type.clone(), ptr_type.clone()], Some(&int_type));
 
     ids
 }
