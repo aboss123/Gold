@@ -5,18 +5,18 @@ use gold_frontend::error::{report_type_error, TypeError};
 use gold_frontend::frontend::{Expr, Type};
 
 pub struct FuncSig {
-    return_type: Type,
-    param_types: Vec<(Type, Range<usize>)>,
-    scope_index: usize
+    pub return_type: Type,
+    pub param_types: Vec<(Type, Range<usize>)>,
+    pub scope_index: usize
 }
 
 #[derive(Clone)]
 pub struct VarSig {
-    ty: Type,
+    pub ty: Type,
 }
 
-struct VariableRegistry {
-    scopes: Vec<HashMap<String, VarSig>>,
+pub struct VariableRegistry {
+    pub scopes: Vec<HashMap<String, VarSig>>,
 }
 
 impl VariableRegistry {
@@ -41,17 +41,21 @@ impl VariableRegistry {
         self.scopes.last_mut().unwrap()
     }
 
-    fn push(&mut self, name: String, sig: VarSig) {
+    pub fn push(&mut self, name: String, sig: VarSig) {
         self.top_stack().insert(name, sig);
+    }
+
+    pub fn get(&mut self, index: usize, name: String) -> &VarSig {
+        self.scopes.get(index).unwrap().get(&name).unwrap()
     }
 }
 
 pub struct Analyzer {
-    functions: HashMap<String, FuncSig>,
-    variables: VariableRegistry,
-    source: String,
-    filename: String,
-    errors: usize,
+    pub functions: HashMap<String, FuncSig>,
+    pub variables: VariableRegistry,
+    pub source: String,
+    pub filename: String,
+    pub errors: usize,
 }
 
 impl Analyzer {

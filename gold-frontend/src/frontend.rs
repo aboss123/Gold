@@ -19,7 +19,7 @@ pub struct Parameter {
 
 pub enum Expr {
     NoExpr,
-    Number(u64, Range<usize>),
+    Number(i64, Range<usize>),
     String(String, Range<usize>),
     Var(String, Range<usize>),
     Parameter(Parameter, Range<usize>),
