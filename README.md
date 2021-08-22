@@ -61,4 +61,5 @@ fn {
 
 ## Project Status
 Compiler is unfinished.
+Hello world works at least.
 Jit is wired up, need to resolve a few parser errors.

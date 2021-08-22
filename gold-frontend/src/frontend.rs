@@ -112,7 +112,7 @@ impl From<Type> for AbiParam {
         match ty {
           Type::Int =>  AbiParam::new(types::I64),
           Type::Float => AbiParam::new(types::F32),
-          Type::String => AbiParam::new(Type::triple_pointer_type(&target_lexicon::Triple::host())),
+          Type::String => AbiParam::new(cranelift::prelude::Type::triple_pointer_type(&target_lexicon::Triple::host())),
           Type::Bool => AbiParam::new(types::B1),
           _ => todo!()
         }
