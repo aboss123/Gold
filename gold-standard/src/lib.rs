@@ -1,4 +1,4 @@
-pub use load::load_symbols;
+pub use load::{load_symbols, declare_functions};
 
 mod load;
 
