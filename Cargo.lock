@@ -160,7 +160,9 @@ dependencies = [
  "cranelift",
  "cranelift-jit",
  "cranelift-module",
+ "cranelift-native",
  "gold-frontend",
+ "gold-standard",
 ]
 
 [[package]]
@@ -168,6 +170,7 @@ name = "gold-frontend"
 version = "0.1.0"
 dependencies = [
  "codespan-reporting",
+ "cranelift",
  "peg",
 ]
 

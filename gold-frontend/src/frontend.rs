@@ -1,5 +1,7 @@
 use core::ops::Range;
 
+use cranelift::prelude::{AbiParam, types};
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Type {
     Int,
@@ -21,15 +23,16 @@ pub enum Expr {
     String(String, Range<usize>),
     Var(String, Range<usize>),
     Parameter(Parameter, Range<usize>),
-    Function(/* name */ String, /* params */ Vec<(Parameter, Range<usize>)>, /* Ret */ Type, /* stmts */ Vec<Expr>, Range<usize>),
+    Block(Vec<Expr>, Range<usize>),
+    Function(/* name */ String, /* params */ Vec<(Parameter, Range<usize>)>, /* Ret */ Type, /* stmts */ Box<Expr>, Range<usize>),
 
-    Else(Vec<Expr>, Range<usize>),
-    Elif(Box<Expr>, Vec<Expr>, Range<usize>),
-    If(Box<Expr>, Vec<Expr>, Option<Vec<Expr>>, Option<Box<Expr>>, Range<usize>),
+    Else(/* block */ Box<Expr>, Range<usize>),
+    Elif(/* block */ Box<Expr>, Box<Expr>, Range<usize>),
+    If(Box<Expr>, /* block */ Box<Expr>, /*elifs*/ Option<Vec<Expr>>, Option<Box<Expr>>, Range<usize>),
 
     Call(String, Vec<Expr>, Range<usize>, Range<usize>),
 
-    While(Box<Expr>, Vec<Expr>, Range<usize>),
+    While(Box<Expr>, /* block */ Box<Expr>, Range<usize>),
     List(Vec<Expr>, Range<usize>),
 
     Assign(String, Box<Expr>, Range<usize>),
@@ -81,6 +84,31 @@ impl From<String> for Type {
     }
 }
 
+impl From<Type> for types::Type {
+  #[inline]
+  fn from(ty: Type) -> Self {
+      match ty {
+          Type::Int =>   types::I32,
+          Type::Float => types::F32,
+          Type::String => todo!(),
+          Type::Bool =>  types::B1,
+          _ => todo!()
+      }
+  }
+}
+
+impl From<Type> for AbiParam {
+    #[inline]
+    fn from(ty: Type) -> Self {
+        match ty {
+          Type::Int =>  AbiParam::new(types::I32),
+          Type::Float => AbiParam::new(types::F32),
+          Type::String => todo!(),
+          Type::Bool => AbiParam::new(types::B1),
+          _ => todo!()
+        }
+    }
+}
 
 impl Type {
     pub fn as_str(&mut self) -> &str {
@@ -104,10 +132,15 @@ peg::parser!(pub grammar parser() for str {
         "//" _ "Params:" 
         params:parameters() _ 
         ret:return_stmt() _ 
-        "fn" _ "{" _ stmts:statements() _ "}"
+        "fn" _ body:block()
       {
-          Expr::Function(function_name, params, ret, stmts, start..end)
-      }   
+          Expr::Function(function_name, params, ret, Box::new(body), start..end)
+      }  
+  pub rule block() -> Expr 
+      = start:position!() "{" _ stmts:statements() _ "}" end:position!()
+      {
+        Expr::Block(stmts, start..end)
+      }
 
   pub rule assignment() -> Expr 
       = start:position!() "var" _ i:identifier() _ "=" _ e:expression() end:position!()
@@ -136,31 +169,28 @@ peg::parser!(pub grammar parser() for str {
       = if_expr()
       / while_expr()
       / binary_op()
+      / block()
 
   pub rule statements() -> Vec<Expr>
       = stmt:(expression()*) { stmt }
   
   pub rule else_expr() -> Expr
-      = start:position!() "else" _ "{" _ body:statements() _ "}" end:position!()
+      = start:position!() "else" _ body:block() end:position!()
       {
-        Expr::Else(body, start..end)
+        Expr::Else(Box::new(body), start..end)
       }
   
   pub rule elif() -> Expr 
-      = start:position!() "elif" _ expr:binary_op() _ "{"
-            body:statements() _
-        "}" end:position!()
+      = start:position!() "elif" _ expr:binary_op() _ body:block() end:position!()
       {
-        Expr::Elif(Box::new(expr), body, start..end)
+        Expr::Elif(Box::new(expr), Box::new(body), start..end)
       }
   
   pub rule if_expr() -> Expr
-      = start:position!() "if" _ expr:binary_op() _ "{"  _
-          if_body:statements() _ 
-        "}" end:position!() _ elif_body:(elif()*) _ else_body:(else_expr()?) 
+      = start:position!() "if" _ expr:binary_op() _ if_body:block() end:position!() _ elif_body:(elif()*) _ else_body:(else_expr()?) 
 
       {
-        Expr::If(Box::new(expr), if_body, 
+        Expr::If(Box::new(expr), Box::new(if_body), 
           if elif_body.len() > 0 {
             Some(elif_body)
           } else {
@@ -173,11 +203,9 @@ peg::parser!(pub grammar parser() for str {
       }
 
   pub rule while_expr() -> Expr 
-      = start:position!() "while" _ cond:binary_op() _ "{"  _ 
-          stmts:statements()
-      "}" end:position!() 
+      = start:position!() "while" _ cond:binary_op() _ stmts:block() end:position!() 
       {
-        Expr::While(Box::new(cond), stmts, start..end)
+        Expr::While(Box::new(cond), Box::new(stmts), start..end)
       }
 
   pub rule binary_op() -> Expr = precedence! {

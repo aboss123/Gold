@@ -7,7 +7,7 @@ use gold_frontend::frontend::{Expr, Type};
 pub struct FuncSig {
     return_type: Type,
     param_types: Vec<(Type, Range<usize>)>,
-    error_metadata: Range<usize>,
+    scope_index: usize
 }
 
 #[derive(Clone)]
@@ -40,9 +40,13 @@ impl VariableRegistry {
     fn top_stack(&mut self) -> &mut HashMap<String, VarSig> {
         self.scopes.last_mut().unwrap()
     }
+
+    fn push(&mut self, name: String, sig: VarSig) {
+        self.top_stack().insert(name, sig);
+    }
 }
 
-pub struct Analysis {
+pub struct Analyzer {
     functions: HashMap<String, FuncSig>,
     variables: VariableRegistry,
     source: String,
@@ -50,7 +54,7 @@ pub struct Analysis {
     errors: usize,
 }
 
-impl Analysis {
+impl Analyzer {
     pub fn new(src: String, filename: String) -> Self {
         Self {
             functions: HashMap::new(),
@@ -64,7 +68,7 @@ impl Analysis {
 
 pub trait Lower {
     fn get_type(&self, func_ref: &HashMap<String, FuncSig>, var_ref: &HashMap<String, VarSig>) -> Type;
-    fn lower_expr(&self, typechecker: &mut Analysis);
+    fn typecheck(&self, typechecker: &mut Analyzer);
 }
 
 impl Lower for Expr {
@@ -75,10 +79,30 @@ impl Lower for Expr {
             Expr::String(_, _) => Type::String,
             Expr::Parameter(param, _) => param.typename,
             Expr::Function(_, _, ty, _, _) => *ty,
-            Expr::Else(stmts, _) => stmts.last().unwrap().get_type(func_ref, var_ref),
-            Expr::Elif(_, stmts, _) => stmts.last().unwrap().get_type(func_ref, var_ref),
-            Expr::If(_, stmts, _, _, _) => stmts.last().unwrap().get_type(func_ref, var_ref),
-            Expr::While(_, stmts, _) => stmts.last().unwrap().get_type(func_ref, var_ref),
+            Expr::Else(block, _) => {
+                match block.as_ref() {
+                    Expr::Block(stmts, _) => stmts.last().unwrap().get_type(func_ref, var_ref),
+                    _ => unreachable!()
+                }
+            }
+            Expr::Elif(_, block, _) => {
+                match block.as_ref() {
+                    Expr::Block(stmts, _) => stmts.last().unwrap().get_type(func_ref, var_ref),
+                    _ => unreachable!()
+                }
+            }
+            Expr::If(_, block, _, _, _) => {
+                match block.as_ref() {
+                    Expr::Block(stmts, _) => stmts.last().unwrap().get_type(func_ref, var_ref),
+                    _ => unreachable!()
+                }
+            }
+            Expr::While(_, block, _) => {
+                match block.as_ref() {
+                    Expr::Block(stmts, _) => stmts.last().unwrap().get_type(func_ref, var_ref),
+                    _ => unreachable!()
+                }
+            }
             Expr::Call(name, _, _, _) => {
                 let probably_correct_func = func_ref.get(name).unwrap();
                 probably_correct_func.return_type
@@ -98,10 +122,11 @@ impl Lower for Expr {
             Expr::Var(ident, _) => todo!(),
             Expr::Assign(_, e, _) => e.get_type(func_ref, var_ref),
             Expr::Reassign(_, e, _) => e.get_type(func_ref, var_ref),
+            Expr::Block(_, _) => Type::Void,
         }
     }
 
-    fn lower_expr(&self, typechecker: &mut Analysis) {
+    fn typecheck(&self, typechecker: &mut Analyzer) {
         let unified_theory_of_shit = typechecker.variables.unify();
         match self {
             Expr::NoExpr => unreachable!(),
@@ -114,14 +139,13 @@ impl Lower for Expr {
                 }
             }
             Expr::Assign(name, expr, _) => {
-                let ts = typechecker.variables.top_stack();
                 let fun = &typechecker.functions;
-                ts.insert(name.to_owned(), VarSig { ty: expr.get_type(fun, &unified_theory_of_shit) });
-                expr.lower_expr(typechecker);
+                typechecker.variables.push(name.to_owned(), VarSig { ty: expr.get_type(fun, &unified_theory_of_shit) });
+                expr.typecheck(typechecker);
             }
             Expr::Reassign(name, expr, err) => {
                 match typechecker.variables.unify().get(name) {
-                    Some(_) => { expr.lower_expr(typechecker); }
+                    Some(var) => { expr.typecheck(typechecker); }
                     None => {
                         report_type_error(TypeError::NotDefined(err.to_owned()), typechecker.filename.as_str(), typechecker.source.as_str());
                     }
@@ -130,24 +154,30 @@ impl Lower for Expr {
             Expr::Number(_, _) => todo!(),
             Expr::String(_, _) => todo!(),
             Expr::Parameter(_, _) => todo!(),
-            Expr::Function(name, params, ty, stmts, loc) => {
+            Expr::Function(name, params, ty, block, loc) => {
+                // Add the function scope
+                typechecker.variables.scopes.push(HashMap::new());
                 typechecker.functions.insert(name.to_owned(), FuncSig {
                     return_type: *ty,
                     param_types: params.iter().map(|p| ((*p).0.typename, (*p).1.to_owned())).collect::<Vec<(Type, Range<usize>)>>(),
-                    error_metadata: loc.to_owned(),
+                    scope_index: typechecker.variables.scopes.len() - 1
                 });
-                for stmt in stmts { stmt.lower_expr(typechecker); }
+                block.typecheck(typechecker);
             }
-            Expr::Else(_, _) => todo!(),
-            Expr::Elif(_, _, _) => todo!(),
+            Expr::Block(stmts, _) => {
+                for stmt in stmts {
+                    stmt.typecheck(typechecker)
+                }
+            }
+            Expr::Else(block, _) => block.typecheck(typechecker),
+            Expr::Elif(block, _, _) => block.typecheck(typechecker),
             Expr::If(cond, body, elifs, else_body, loc) => {
-                cond.lower_expr(typechecker);
-                for stmt in body { stmt.lower_expr(typechecker); }
+                cond.typecheck(typechecker);
                 if elifs.is_some() {
-                    for stmt in elifs.as_ref().unwrap() { stmt.lower_expr(typechecker); }
+                    for elif in elifs.as_ref().unwrap() { elif.typecheck(typechecker); }
                 }
                 if else_body.is_some() {
-                    for stmt in elifs.as_ref().unwrap() { stmt.lower_expr(typechecker); }
+                    else_body.as_ref().unwrap().typecheck(typechecker)
                 }
             }
             Expr::Call(name, args, nloc, arg_loc) => {
@@ -171,8 +201,8 @@ impl Lower for Expr {
                 }
             }
             Expr::While(cond, body, _) => {
-                cond.lower_expr(typechecker);
-                for stmt in body { stmt.lower_expr(typechecker); }
+                cond.typecheck(typechecker);
+                body.typecheck(typechecker);
             }
             Expr::List(_, _) => todo!(),
             Expr::Equality(lhs, rhs) => {

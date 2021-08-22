@@ -9,3 +9,4 @@ authors = ["aboss123", "Noah-Kennedy"]
 [dependencies]
 peg = "0.7"
 codespan-reporting = "0.11.1"
+cranelift = "0.76.0"

@@ -25,6 +25,7 @@ impl Expr {
             Expr::Var(_, r) => r.to_owned(),
             Expr::Assign(_, _, r) => r.to_owned(),
             Expr::Reassign(_, _, r) => r.to_owned(),
+            Expr::Block(_, r) => r.to_owned(),
             Expr::Equality(lhs, rhs) => lhs.expression_range().start..rhs.expression_range().end,
             Expr::NotEqual(lhs, rhs) => lhs.expression_range().start..rhs.expression_range().end,
             Expr::GreaterThan(lhs, rhs) => lhs.expression_range().start..rhs.expression_range().end,
