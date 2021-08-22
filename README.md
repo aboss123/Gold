@@ -17,9 +17,48 @@ Gold brilliantly solves this problem by eliminating most of the function declara
 Gold, function declarations occur in the comments. By creating a grammar from a subset of the
 english language.
 
-Gold is JIT compiled using Cranelift, so it should be fairly fast.
-Gold also has an in-progress standard library written in Rust, currently only consisting of 
-functions for printing strings.
+Gold is JIT compiled using Cranelift, so it should be fairly fast. Gold also has an in-progress
+standard library written in Rust, currently only consisting of functions for printing strings.
+
+## Installation
+You will need the Rust toolchains installed.
+
+Use git to clone the repository.
+
+Then, from the repository root, do the following:
+```bash
+cargo install --path ./gold
+```
 
 ## Examples
 
+### Looping
+
+```text
+// foo is a function.
+// Params:
+// 'a' is of type Int.
+// 'b' is of type Int.
+// Returns: Int
+fn {
+  var cool = 10;
+  while cool > 0 {
+    cool = cool - 1;
+  }
+}
+```
+
+### Printing
+
+```
+// hello is a function.
+// Params:
+// Returns: Void
+fn {
+  print("Hello, world");
+}
+```
+
+## Project Status
+Compiler is unfinished.
+Jit is wired up, need to resolve a few parser errors.
