@@ -3,7 +3,7 @@ use std::ops::Range;
 
 use gold_frontend::error::{report_type_error, TypeError};
 use gold_frontend::frontend::{Expr, Type};
-use gold_standard::load::{PRINT_SYMBOL, PRINTLN_SYMBOL};
+use gold_standard::load::{PRINT_SYMBOL, PRINTLN_SYMBOL, PRINT_INT_SYMBOL, PRINT_FLOAT_SYMBOL};
 
 pub struct FuncSig {
     pub return_type: Type,
@@ -70,6 +70,16 @@ impl Analyzer {
         functions.insert(PRINTLN_SYMBOL.to_owned(), FuncSig {
             return_type: Type::Int,
             param_types: vec![(Type::String, Range::default())],
+            scope_index: 0,
+        });
+        functions.insert(PRINT_INT_SYMBOL.to_owned(), FuncSig {
+            return_type: Type::Void,
+            param_types: vec![(Type::Int, Range::default())],
+            scope_index: 0,
+        });
+        functions.insert(PRINT_FLOAT_SYMBOL.to_owned(), FuncSig {
+            return_type: Type::Void,
+            param_types: vec![(Type::Float, Range::default())],
             scope_index: 0,
         });
         Self {

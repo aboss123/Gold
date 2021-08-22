@@ -22,3 +22,4 @@ Gold also has an in-progress standard library written in Rust, currently only co
 functions for printing strings.
 
 ## Examples
+

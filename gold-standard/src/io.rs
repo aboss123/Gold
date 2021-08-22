@@ -12,6 +12,14 @@ pub unsafe extern "C" fn print(s: *mut raw::c_char) -> i64 {
     }
 }
 
+pub unsafe extern "C" fn print_int(i: i64) {
+    print!("{}", i);
+}
+
+pub unsafe extern "C" fn print_float(i: f64) {
+    print!("{}", i);
+}
+
 pub unsafe extern "C" fn println(s: *mut raw::c_char) -> i64 {
     let c_string = ffi::CStr::from_ptr(s);
 
