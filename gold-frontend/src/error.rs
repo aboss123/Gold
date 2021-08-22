@@ -118,6 +118,7 @@ pub fn report_type_error(error: TypeError, filename: &str, source: &str) {
         Ok(_) => {}
         Err(e) => println!("{}", e.to_string())
     }
+    std::process::exit(1);
 }
 
 pub fn report_parse_error(filename: &str, source: &str, err: ParseError<LineCol>) -> Result<(), Error> {

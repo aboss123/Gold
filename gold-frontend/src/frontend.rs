@@ -90,7 +90,7 @@ impl From<Type> for types::Type {
   #[inline]
   fn from(ty: Type) -> Self {
       match ty {
-          Type::Int =>   types::I32,
+          Type::Int =>   types::I64,
           Type::Float => types::F32,
           Type::String => todo!(),
           Type::Bool =>  types::B1,
@@ -169,15 +169,15 @@ peg::parser!(pub grammar parser() for str {
     
   pub rule expression() -> Expr
       = 
-      binary_op()
-      / assignment()
+      assignment()
+      / binary_op()
       / reassignment()
       / block()
       / if_expr()
       / while_expr()
 
   pub rule statements() -> Vec<Expr>
-      = stmt:(assignment()*) { stmt }
+      = stmt:(expression()*) { stmt }
   
   pub rule else_expr() -> Expr
       = start:position!() "else" _ body:block() end:position!()

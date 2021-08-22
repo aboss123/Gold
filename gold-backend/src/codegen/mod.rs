@@ -1,4 +1,4 @@
-use std::{any::Any, collections::HashMap, ops::Range};
+use std::{any::Any, collections::HashMap, mem, ops::Range};
 
 use cranelift::{codegen::{Context, ir::function}, codegen, frontend::{FunctionBuilder, FunctionBuilderContext, Variable}, prelude::{AbiParam, Block, EntityRef, InstBuilder, Signature, types, Value}};
 use cranelift::codegen::binemit::NullStackMapSink;
@@ -120,7 +120,7 @@ impl Compilation {
 
 
                 let function_id = module
-                    .declare_function(name.as_str(), Linkage::Import, &fn_signature)
+                    .declare_function(name.as_str(), Linkage::Local, &fn_signature)
                     .unwrap();
 
                 codegen_ctx.func.signature = fn_signature;
@@ -168,7 +168,7 @@ impl Compilation {
                 }
 
 
-                let zero = function_builder.borrow_mut().ins().iconst(types::I64, 0);
+                let zero = function_builder.borrow_mut().ins().iconst(types::I64, 21);
                 let return_variable = define_variable(types::I64, &"why".to_owned());
                 function_builder.borrow_mut().def_var(return_variable, zero);
 
@@ -200,6 +200,11 @@ impl Compilation {
                 module.finalize_definitions();
 
                 let code = module.get_finalized_function(function_id);
+                let code_fn = unsafe {
+                    mem::transmute::<_, fn(i64, i64) -> i64>(code)
+                };
+                let v = code_fn(1, 2);
+                println!("{}", v);
             }
             _ => unreachable!()
         };
